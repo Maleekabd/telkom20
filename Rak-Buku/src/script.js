@@ -15,12 +15,13 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 })
 
-function addBook() {
-  const newBook = document.getElementById('title').value;
-  const waktu = document.getElementById('date').value;
+const addBook = () => {
+  const judul = document.getElementById('title').value;
+  const author = document.getElementById('author').value;
+  const year = document.getElementById('date').value;
 
   const generateID = generateId();
-  const newBookObject = generateNewBookObject(generateID, newBook, waktu, false);
+  const newBookObject = generateNewBookObject(generateID, title, author, year, false);
   bookLibrary.push(newBookObject);
 
   document.dispatchEvent(new Event(RENDER_BOOKS));
@@ -31,47 +32,30 @@ function generateId() {
   return +new Date();
 }
 
-function generateNewBookObject(id, book, time, isReaded) {
+function generateNewBookObject(id, title, author, year, isCompleted) {
   return {
     id,
-    book,
-    time,
-    isReaded
+    title,
+    author,
+    year,
+    isCompleted
   }
 };
 
-document.addEventListener(RENDER_BOOKS, function () {
-  const uncompletedReaded = document.getElementById('bookLibrary');
-  uncompletedReaded.innerHTML = '';
+const makeBook = (bookObject) => {
+  const judulBuku = document.createElement('h2');
+  judulBuku.innerText = "Title : " + bookObject.title;
 
-  const completedReaded = document.getElementById('completed-readed');
-  completedReaded.innerHTML = '';
+  const author = document.createElement('p');
+  author.innerText = "Author : " + bookObject.author;
 
-  for (const bookItem of bookLibrary) {
-    const bookElement = makeBook(bookItem);
-    if (!bookItem.isReaded) {
-      uncompletedReaded.append(bookElement);
-    } else {
-      completedReaded.append(bookElement);
-    }
-  }
-})
-
-document.addEventListener(SAVED_BOOKS, function () {
-  console.log(localStorage.getItem(STORAGE_KEY));
-})
-
-function makeBook(bookObject) {
-  const inputUser = document.createElement('h2');
-  inputUser.innerText = bookObject.book;
-
-  const waktu = document.createElement('p');
-  waktu.innerText = bookObject.time;
+  const tahunRilis = document.createElement('p');
+  tahunRilis.innerText = bookObject.year;
 
   const textContainer = document.createElement('div');
 
   textContainer.classList.add('inner');
-  textContainer.append(inputUser, waktu);
+  textContainer.append(judulBuku,author,tahunRilis);
 
   const container = document.createElement('div');
 
@@ -79,7 +63,7 @@ function makeBook(bookObject) {
   container.append(textContainer);
   container.setAttribute('id', `book ${bookObject.id}`);
 
-  if (bookObject.isReaded) {
+  if (bookObject.isCompleted) {
     const undoButton = document.createElement('button');
     undoButton.classList.add('undo-button');
 
@@ -100,17 +84,44 @@ function makeBook(bookObject) {
     checkButton.addEventListener('click', function () {
       addBookToCompletedList(bookObject.id);
     })
-    container.append(checkButton);
+    const trashButton = document.createElement('button');
+    trashButton.classList.add('trash-button');
+
+    trashButton.addEventListener('click', function () {
+      removeBookFromCompletedList(bookObject.id);
+    })
+    container.append(checkButton, trashButton);
   }
   return container;
 }
+
+document.addEventListener(RENDER_BOOKS, function () {
+  const uncompletedReaded = document.getElementById('bookLibrary');
+  uncompletedReaded.innerHTML = '';
+
+  const completedReaded = document.getElementById('completed-readed');
+  completedReaded.innerHTML = '';
+
+  for (const bookItem of bookLibrary) {
+    const bookElement = makeBook(bookItem);
+    if (!bookItem.isCompleted) {
+      uncompletedReaded.append(bookElement);
+    } else {
+      completedReaded.append(bookElement);
+    }
+  }
+})
+
+document.addEventListener(SAVED_BOOKS, function () {
+  console.log(localStorage.getItem(STORAGE_KEY));
+})
 
 function addBookToCompletedList(bookId) {
   const bookTarget = findBook(bookId);
   if (bookTarget == null) {
     return;
   }
-  bookTarget.isReaded = true;
+  bookTarget.isCompleted = true;
   saveBook();
   document.dispatchEvent(new Event(RENDER_BOOKS));
 }
@@ -141,7 +152,7 @@ function undoBookFromCompletedList(bookId) {
   if (bookTarget == null) {
     return;
   }
-  bookTarget.isReaded = false;
+  bookTarget.isCompleted = false;
   document.dispatchEvent(new Event(RENDER_BOOKS));
   saveBook()
 }
